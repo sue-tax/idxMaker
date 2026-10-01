@@ -1,9 +1,9 @@
 import os
 import re
-import pymupdf #fitz  # PyMuPDF
+import pymupdf  # PyMuPDF
 
 # --------------------------------------------------
-# 【ユーザー入力】ファイル名と目次ページ数の指定
+# 【ユーザー入力】ファイル名の指定のみ
 # --------------------------------------------------
 input_pdf = input("PDFファイル名（パス）を入力してください: ").strip()
 
@@ -16,9 +16,6 @@ if not os.path.exists(input_pdf):
 base, ext = os.path.splitext(input_pdf)
 output_pdf = f"{base}_linked{ext}"
 
-print("\n※PDFの最初のページを「1ページ」として指定してください。")
-toc_end_page = int(input("目次の最後のページ番号（1始まり）を入力してください: "))
-
 # PDFファイルを開く
 doc = pymupdf.open(input_pdf)
 
@@ -26,12 +23,39 @@ doc = pymupdf.open(input_pdf)
 is_start_line = lambda text: text.strip().startswith("問")
 is_end_line = lambda text: bool(re.search(r"[\u00B7\.\s]+\s*\d+\s*$", text.strip()))
 
-# 1. 指定された目次ページまでの行だけを一列（フラットなリスト）に並べる
+# ==================================================
+# ★ロジック改良：目次の最後のページ（toc_end_page）を「点々の連続」で自動判定
+# ==================================================
+toc_end_page = 1
+toc_started = False
+
+for page_num in range(1, len(doc) + 1):
+    page = doc[page_num - 1]
+    text_lines = page.get_text("text").split('\n')
+    
+    # 「·」や「.」が3回以上連続し、末尾が数字で終わる目次固有の行をカウント
+    toc_line_count = 0
+    for line in text_lines:
+        if re.search(r"[\u00B7\.]{3,}\s*\d+\s*$", line.strip()):
+            toc_line_count += 1
+            
+    # 1ページ内に目次特有の行が3行以上あれば、そこを目次ページとみなす
+    if toc_line_count >= 3:
+        toc_end_page = page_num
+        toc_started = True
+    else:
+        # 目次エリアが一度始まってから、目次行がないページに到達したらそこで判定終了
+        if toc_started:
+            break
+
+print(f"【自動認識】目次の最終ページを「 {toc_end_page} ページ 」と特定しました。")
+
+# ==================================================
+# 1. 特定された目次ページまでの行だけをフラットなリストに並べる
+# ==================================================
 all_pdf_lines = []
-for page_num, page in enumerate(doc, start=1):
-    if page_num > toc_end_page:
-        break
-        
+for page_num in range(1, toc_end_page + 1):
+    page = doc[page_num - 1]
     page_dict = page.get_text("dict")
     blocks = page_dict.get("blocks", [])
     
@@ -47,10 +71,12 @@ for page_num, page in enumerate(doc, start=1):
                     "text": line_text
                 })
 
+# ==================================================
 # 2. 全行をスキャンして塊を特定し、オフセットを考慮してリンクを付与
+# ==================================================
 current_question = []
 
-print(f"\n=== 内部リンク自動付与（目次 {toc_end_page}ページまでスキャン / オフセット: +{toc_end_page}ページ）を開始 ===")
+print(f"\n=== 内部リンク自動付与（オフセット: +{toc_end_page}ページ）を開始 ===")
 
 for line in all_pdf_lines:
     text = line["text"]
@@ -81,11 +107,11 @@ for line in all_pdf_lines:
             # 目次の最終ページ分を足して、実際のPDFの絶対ページ数を計算
             dest_page_index = (original_dest_page + toc_end_page) - 1
             
-            # 【修正箇所①】リンクを貼る対象のページ（目次が始まったページ）
+            # リンクを貼る対象のページ（目次が始まったページ）
             link_page_num = current_question[0]["page"]
             page_obj = doc[link_page_num - 1]
             
-            # 【修正箇所②】リンク範囲（座標）の正しい計算
+            # ユーザー様に修正いただいた正確な座標計算ロジック（bboxのインデックス指定）
             target_lines = [item for item in current_question if item["page"] == link_page_num]
             x0 = min([item["bbox"][0] for item in target_lines])
             y0 = min([item["bbox"][1] for item in target_lines])
