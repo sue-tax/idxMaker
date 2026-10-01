@@ -1,0 +1,77 @@
+{
+    "pdf_path": "",
+    "start_page": "1",
+    "last_page": "0",
+    "patterns": [
+        {
+            "level": "1",
+            "prefix": "第",
+            "middle": "半角数字123",
+            "suffix": "",
+            "has_space": true
+        },
+        {
+            "level": "2",
+            "prefix": "",
+            "middle": "半角数字123",
+            "suffix": "",
+            "has_space": true
+        },
+        {
+            "level": "3",
+            "prefix": "半角括弧(",
+            "middle": "半角数字123",
+            "suffix": "半角括弧)",
+            "has_space": true
+        },
+        {
+            "level": "4",
+            "prefix": "",
+            "middle": "片仮名アイウ",
+            "suffix": "",
+            "has_space": true
+        },
+        {
+            "level": "4",
+            "prefix": "",
+            "middle": "丸数字①②③",
+            "suffix": "",
+            "has_space": true
+        },
+        {
+            "level": "6",
+            "prefix": "",
+            "middle": "",
+            "suffix": "",
+            "has_space": false
+        },
+        {
+            "level": "7",
+            "prefix": "",
+            "middle": "",
+            "suffix": "",
+            "has_space": false
+        },
+        {
+            "level": "8",
+            "prefix": "",
+            "middle": "",
+            "suffix": "",
+            "has_space": false
+        },
+        {
+            "level": "9",
+            "prefix": "",
+            "middle": "",
+            "suffix": "",
+            "has_space": false
+        },
+        {
+            "level": "10",
+            "prefix": "",
+            "middle": "",
+            "suffix": "",
+            "has_space": false
+        }
+    ]
+}

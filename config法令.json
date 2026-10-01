@@ -1,0 +1,77 @@
+{
+    "pdf_path": "",
+    "start_page": "1",
+    "last_page": "0",
+    "patterns": [
+        {
+            "level": "1",
+            "prefix": "第",
+            "middle": "漢数字一二三",
+            "suffix": "章",
+            "has_space": true
+        },
+        {
+            "level": "2",
+            "prefix": "第",
+            "middle": "漢数字一二三",
+            "suffix": "節",
+            "has_space": true
+        },
+        {
+            "level": "3",
+            "prefix": "第",
+            "middle": "漢数字一二三",
+            "suffix": "条..",
+            "has_space": true
+        },
+        {
+            "level": "4",
+            "prefix": "",
+            "middle": "全角数字１２３",
+            "suffix": "",
+            "has_space": true
+        },
+        {
+            "level": "5",
+            "prefix": "",
+            "middle": "漢数字一二三",
+            "suffix": "",
+            "has_space": true
+        },
+        {
+            "level": "6",
+            "prefix": "",
+            "middle": "片仮名アイウ",
+            "suffix": "",
+            "has_space": true
+        },
+        {
+            "level": "7",
+            "prefix": "全角括弧（",
+            "middle": "全角数字１２３",
+            "suffix": "全角括弧）",
+            "has_space": true
+        },
+        {
+            "level": "1",
+            "prefix": "",
+            "middle": "附則",
+            "suffix": "",
+            "has_space": false
+        },
+        {
+            "level": "9",
+            "prefix": "",
+            "middle": "",
+            "suffix": "",
+            "has_space": false
+        },
+        {
+            "level": "10",
+            "prefix": "",
+            "middle": "",
+            "suffix": "",
+            "has_space": false
+        }
+    ]
+}

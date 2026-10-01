@@ -5,11 +5,11 @@ Created on 2026/09/27
 '''
 
 '''
-目次設定の別保存も可
+TODO 目次設定の別保存も可
 
 '''
 
-import pymupdf  # PyMuPDF（しおり追加用）
+import pymupdf
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LAParams, LTTextBoxHorizontal
 import re
@@ -20,23 +20,15 @@ from tkinter import simpledialog, messagebox, filedialog
 from tkinter import ttk
 
 
-__version__ = "0.01"
+__version__ = "0.10"
 
 indexMaker = "idxMaker"
-
-# 設定ファイルの保存先（スクリプトと同じフォルダに config.json として保存）
-# CONFIG_FILE = os.path.join(os.path.dirname(__file__), indexMaker + "config.json") \
-#         if "__file__" in locals() else indexMaker + "config.json"
 
 # デフォルトの設定ファイルの保存先
 DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.json") \
         if "__file__" in locals() else "config.json"
 
 class ConvertKaisei(object):
-    '''
-    税制改正の解説のPDFファイルからテキストを抽出する
-    '''
-
 
     def __init__(self, input_file_name, start_page, end_page):
         '''
@@ -74,6 +66,7 @@ class ConvertKaisei(object):
             last_p = 0   # エラー時はデフォルト最後まで
             
         # pdfminerは「0始まり」のインデックスを期待するため、1を引く
+        # if start_p 4枚目なら start_idx 3
         start_idx = max(0, start_p - 1)
         
         # page_numbers引数に渡すページ番号のリストを組み立てる
@@ -108,24 +101,17 @@ class ConvertKaisei(object):
             for element in page_layout:
                 # print(element)
                 if isinstance(element, LTTextBoxHorizontal):
-                    # if element.y0 > self.header:
-                    #     continue
-                    # if element.y1 < self.footer:
-                    #     continue
                     list_textbox.append(element)
-                # if isinstance(element, LTRect):
-                #     print("LTRect")
-                #     list_rect.append(element)
             list_textbox.sort(key=self.sorty_func)
             # print(list_textbox)
             for textbox in list_textbox:
-                print(textbox)
-                print(textbox.x0, textbox.y1, page_layout.height)
+                # print(textbox)
+                # print(textbox.x0, textbox.y1, page_layout.height)
                 list_text.append( \
                         (textbox.get_text(), \
                         textbox.x0, page_height - textbox.y1 - 10 ))
-                print(textbox.get_text())
-            self.list_page.append((i, list_text))
+                # print(textbox.get_text())
+            self.list_page.append((i + 1, list_text))
 
         # for i, page in enumerate(self.list_page):
         #     # print(i)
@@ -142,7 +128,7 @@ class ConvertKaisei(object):
         # for num_page, page_data in enumerate(self.list_page):
         for page_data in self.list_page:
             for text in page_data[1]:
-                bare_text = text[0] # .trim()
+                bare_text = text[0].strip(" \n\r\t")
                 for num_index, index in enumerate(list_index): 
                     m_index = index[1].match(bare_text)
                     if m_index:
@@ -168,8 +154,8 @@ class ConvertKaisei(object):
                                    "to": point,
                                    "zoom": 0
                                 }]
-                        print(text)
-                        print(bare_text)
+                        # print(text)
+                        # print(bare_text)
                         list_toc.append(toc)
                         before_level = level
                         if (min_level > level):
@@ -248,7 +234,7 @@ def get_default_config():
         ]
     }
 
-        
+
 def save_config(config_data, file_path):
     """指定されたファイルパスに設定をJSON形式で保存する"""
     try:
@@ -275,42 +261,78 @@ def show_input_dialog():
     # 現在読み込まれている設定ファイルのパスを保持する変数
     active_config_path = tk.StringVar(value=DEFAULT_CONFIG_FILE)
     
-    # --- 0. 設定ファイルの選択・読み込みエリア ---
+    # --- 設定ファイルの管理エリア ---
     config_frame = tk.LabelFrame(root, text="設定ファイルの管理", font=("", 9, "bold"))
     config_frame.grid(row=0, column=0, columnspan=5, sticky="ew", padx=10, pady=5)
     
-    lbl_config_path = tk.Label(config_frame, text=os.path.basename(active_config_path.get()), fg="blue", wraplength=300)
-    lbl_config_path.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+    lbl_config_path = tk.Label(config_frame, text=os.path.basename(active_config_path.get()), fg="blue", wraplength=250)
+    lbl_config_path.grid(row=0, column=2, padx=5, pady=5, sticky="w")
     
+    # 【追加機能】別名で保存するボタンの処理
+    def save_config_as():
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON設定ファイル", "*.json")],
+            initialfile=os.path.basename(active_config_path.get())
+        )
+        if file_path:
+            active_config_path.set(file_path)
+            lbl_config_path.config(text=os.path.basename(file_path))
+            # 現在のUIの状態を入力データとしてまとめる
+            config_to_save = gather_ui_data()
+            save_config(config_to_save, file_path)
+            messagebox.showinfo("完了", "設定を別名で保存しました。")
+
     def select_and_load_config():
-        """ユーザーがファイルを選んで設定をUIに反映する"""
         file_path = filedialog.askopenfilename(filetypes=[("JSON設定ファイル", "*.json")])
         if file_path:
             loaded = load_config_from_file(file_path)
             if loaded:
                 active_config_path.set(file_path)
                 lbl_config_path.config(text=os.path.basename(file_path))
-                
-                # UIの各入力欄を更新する
+                # （UIへの反映処理：以前のコードと同様）
                 entry_pdf.delete(0, tk.END)
                 entry_pdf.insert(0, loaded.get("pdf_path", ""))
                 entry_start.delete(0, tk.END)
                 entry_start.insert(0, loaded.get("start_page", "1"))
                 entry_last.delete(0, tk.END)
                 entry_last.insert(0, loaded.get("last_page", "0"))
-                
+
+                # --- [追加] 階層と正規表現（patterns）のUI復元処理 ---
                 saved_patterns = loaded.get("patterns", [])
+                
                 for idx, row_entries in enumerate(pattern_rows):
-                    p_data = saved_patterns[idx] if idx < len(saved_patterns) else {"level": str(idx+1), "prefix": "", "middle": "", "suffix": "", "has_space": False}
+                    # 保存されたデータがあれば取得、なければ空の初期値
+                    if idx < len(saved_patterns):
+                        p_data = saved_patterns[idx]
+                    else:
+                        p_data = {
+                            "level": str(idx + 1), 
+                            "prefix": "", 
+                            "middle": "", 
+                            "suffix": "", 
+                            "has_space": False
+                        }
+                    
+                    # 階層（Entry）の復元
                     row_entries["level"].delete(0, tk.END)
-                    row_entries["level"].insert(0, p_data.get("level", str(idx+1)))
+                    row_entries["level"].insert(0, p_data.get("level", str(idx + 1)))
+                    
+                    # 前・中・後（Combobox）の復元
                     row_entries["prefix"].set(p_data.get("prefix", ""))
                     row_entries["middle"].set(p_data.get("middle", ""))
                     row_entries["suffix"].set(p_data.get("suffix", ""))
+                    
+                    # 末尾に空白（チェックボックス）の復元
                     row_entries["has_space"].set(p_data.get("has_space", False))
+                # -----------------------------------------------------
+                
                 messagebox.showinfo("完了", "設定ファイルを読み込みました。")
 
-    tk.Button(config_frame, text="設定を読み込む...", command=select_and_load_config).grid(row=0, column=1, padx=5, pady=5)
+    tk.Button(config_frame, text="読み込む...", command=select_and_load_config) \
+            .grid(row=0, column=0, padx=5, pady=5)
+    tk.Button(config_frame, text="別名で保存...", command=save_config_as) \
+            .grid(row=0, column=1, padx=5, pady=5)
     
     # --- PDFファイル入力 ---
     tk.Label(root, text="対象のPDFファイル:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
@@ -405,6 +427,25 @@ def show_input_dialog():
     result = {}
 
     
+    def gather_ui_data():
+        """UIの現在の入力内容を辞書オブジェクトにまとめる共通処理"""
+        strip_chars = " \n\r\t"
+        all_input_patterns = []
+        for idx, row_entries in enumerate(pattern_rows, start=1):
+            all_input_patterns.append({
+                "level": row_entries["level"].get().strip(strip_chars),
+                "prefix": row_entries["prefix"].get().strip(strip_chars),
+                "middle": row_entries["middle"].get().strip(strip_chars),
+                "suffix": row_entries["suffix"].get().strip(strip_chars),
+                "has_space": row_entries["has_space"].get()
+            })
+        return {
+            "pdf_path": entry_pdf.get().strip(strip_chars),
+            "start_page": entry_start.get().strip(strip_chars),
+            "last_page": entry_last.get().strip(strip_chars),
+            "patterns": all_input_patterns
+        }
+
     def on_submit():
         result["pdf_path"] = entry_pdf.get().strip()
         result["start_page"] = entry_start.get().strip()
@@ -489,17 +530,15 @@ def show_input_dialog():
 if __name__ == "__main__":
     # 1. ダイアログを表示して入力を取得
     user_inputs = show_input_dialog()
-    print(user_inputs)
+    # print(user_inputs)
     if (len(user_inputs) == 0):
         print("キャンセルされました")
         exit(0)
-    
-    # save_config()
 
     list_index = []
     for row_entries in user_inputs.get("patterns"):
-        print(row_entries)
-        print(row_entries["level"])
+        # print(row_entries)
+        # print(row_entries["level"])
         level = row_entries["level"]    #.get().strip()
         prefix = row_entries["prefix"] #.get().strip()
         middle = row_entries["middle"] #.get().strip()
@@ -508,7 +547,7 @@ if __name__ == "__main__":
         # 「中（数字など）」が入力されている場合のみ有効なパターンとして扱う
         if middle:
             c_index = '^' + prefix + middle + suffix
-            print(c_index)
+            # print(c_index)
             p_index = re.compile(c_index)
             index = (int(level), p_index)
             list_index.append(index)
@@ -516,13 +555,11 @@ if __name__ == "__main__":
     cnv = ConvertKaisei(user_inputs.get("pdf_path"),
             int(user_inputs.get("start_page")),
             int(user_inputs.get("last_page")))
-    # cnv = ConvertKaisei("05giji_kabukaigi.pdf", "sample")
-    # cnv = ConvertKaisei("05giji_kabukaigi_5.pdf", "sample")
     cnv.readText()
 
     (list_toc, min_level) = cnv.pickupIndex(list_index)
-    print(list_toc)
-    print(min_level)
+    # print(list_toc)
+    # print(min_level)
     
     toc = []
     for each in list_toc:
@@ -531,28 +568,9 @@ if __name__ == "__main__":
         print(each[1])
         print(each[2])
         print(each[3])
-        each_toc = [ each[0] - min_level + 1, each[1], each[2] + 1, each[3] ]
+        each_toc = [ each[0] - min_level + 1, each[1], each[2], each[3] ]
         toc.append(each_toc)
-    print(toc)
-    # toc = [
-    #     [ 1, 'テスト', 1],
-    #     [ 2, '123', 1],
-    #     [ 1, "あああああ", 2]
-    # ]
+    # print(toc)
     cnv.writeIndex(toc)
-            # p_dai = re.compile(
-            #         r'(第[一二三四五六七八九十]).?　([^\r\n\x08…]+)[^\r\n]*?(\r\n|\n|\r)')
-            # p_kansuji = re.compile(
-            #         r'([一二三四五六七八九十]+).?　([^\r\n\x08…]+)[^\r\n]*?(\r\n|\n|\r)')
-            # p_suji = re.compile(
-            #         r'([0-9０-９]+).?　([^\r\n\x08…]+)[^\r\n]*?(\r\n|\n|\r)')
-            # # ローマ数字１３、１４があるが、0x1a
-            # p_romasuji = re.compile(
-            #         r'([Ⅰ-Ⅻ]+).?　([^\r\n\x08…]+)[^\r\n]*?(\r\n|\n|\r)')
-            # p_kakko = re.compile(r'([⑴-⒇]) ?[ 　]([^\r\n]+?)(\r\n|\n|\r)')
-            # p_maru = re.compile(r'([①-⑳]) ?[ 　]([^\r\n]+?)(\r\n|\n|\r)')
-            #
-            # p_other = re.compile(
-            #         r'([^\r\n\x08…]+)[^\r\n]*?(\r\n|\n|\r)')
     del cnv
  
