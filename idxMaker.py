@@ -5,8 +5,7 @@ Created on 2026/09/27
 '''
 
 '''
-TODO 目次設定の別保存も可
-
+TODO 目次設定の別保存も可、目次の編集を可
 '''
 
 import pymupdf
@@ -563,11 +562,11 @@ if __name__ == "__main__":
     
     toc = []
     for each in list_toc:
-        print(each)
-        print(each[0])
-        print(each[1])
-        print(each[2])
-        print(each[3])
+        # print(each)
+        # print(each[0])
+        # print(each[1])
+        # print(each[2])
+        # print(each[3])
         each_toc = [ each[0] - min_level + 1, each[1], each[2], each[3] ]
         toc.append(each_toc)
     # print(toc)
